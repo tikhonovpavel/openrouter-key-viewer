@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenRouter Key Stats Visualizer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background-color: #1f2937; /* gray-800 */
+            border: 1px solid #374151; /* gray-700 */
+            border-radius: 0.75rem; /* rounded-xl */
+            padding: 1.5rem; /* p-6 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Simple spinner animation */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white">OpenRouter Key Stats</h1>
+            <p class="text-gray-400 mt-2">Enter your OpenRouter API key to see your usage details.</p>
+        </header>
+
+        <main>
+            <!-- Input section -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <input type="password" id="apiKeyInput" placeholder="Enter your OpenRouter API key (or_...)" class="flex-grow w-full bg-gray-700 text-white placeholder-gray-400 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <button id="fetchButton" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                        <span id="buttonText">Fetch Stats</span>
+                        <div id="spinner" class="spinner hidden ml-2"></div>
+                    </button>
+                </div>
+                 <p class="text-xs text-gray-500 mt-3 text-center sm:text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.026a12.017 12.017 0 01-1.166 5.81c-.244 1.348.114 2.76.815 3.995a11.988 11.988 0 01.815 1.487c.296.56.653 1.086 1.058 1.579a11.973 11.973 0 011.579 1.058c.493.405 1.018.762 1.579.058a11.987 11.987 0 011.487.815c1.235.701 2.647 1.058 3.995.815a12.017 12.017 0 015.81-1.166A11.954 11.954 0 0110 1.944zM8.707 8.707a1 1 0 00-1.414 1.414L8.586 11.414l-1.293 1.293a1 1 0 001.414 1.414L10 12.828l1.293 1.293a1 1 0 001.414-1.414L11.414 11.414l1.293-1.293a1 1 0 00-1.414-1.414L10 10.086 8.707 8.707z" clip-rule="evenodd" /></svg>
+                    Your key is not stored and is only used to make a direct request to the OpenRouter API.
+                </p>
+            </div>
+
+            <!-- Results container -->
+            <div id="resultsContainer" class="hidden">
+                <!-- Key Label Card -->
+                <div class="card mb-6">
+                     <h2 class="text-lg font-semibold text-gray-300 mb-2">Key Label</h2>
+                     <p id="keyLabel" class="text-2xl font-bold text-white">-</p>
+                </div>
+
+                <!-- Usage and Limit Card -->
+                <div class="card mb-6">
+                    <h2 class="text-lg font-semibold text-gray-300 mb-4">Usage & Limit</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div>
+                            <p class="text-sm text-gray-400">Usage</p>
+                            <p id="usage" class="text-3xl font-bold text-red-400">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Limit</p>
+                            <p id="limit" class="text-3xl font-bold text-green-400">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Remaining</p>
+                            <p id="limitRemaining" class="text-3xl font-bold text-blue-400">-</p>
+                        </div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="mt-6">
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
+                        </div>
+                        <p id="progressLabel" class="text-right text-sm mt-2 text-gray-400">0% Used</p>
+                    </div>
+                </div>
+
+                <!-- Other Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card">
+                         <h3 class="text-lg font-semibold text-gray-300 mb-3">Rate Limit</h3>
+                         <div class="flex items-center space-x-4">
+                            <div class="bg-gray-700 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </div>
+                            <div>
+                                <p id="rateLimit" class="text-xl font-semibold text-white">-</p>
+                                <p class="text-sm text-gray-400">Requests per interval</p>
+                            </div>
+                         </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-3">Status</h3>
+                        <div class="flex items-center space-x-4">
+                             <div class="bg-gray-700 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <div>
+                                <p id="freeTierStatus" class="text-xl font-semibold text-white">-</p>
+                                <p class="text-sm text-gray-400">Free Tier</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error message container -->
+            <div id="errorContainer" class="hidden card bg-red-900 border-red-700 text-red-200 mt-6">
+                <p id="errorMessage"></p>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- DOM Element References ---
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const fetchButton = document.getElementById('fetchButton');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('spinner');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // --- Result Display Elements ---
+        const keyLabel = document.getElementById('keyLabel');
+        const usage = document.getElementById('usage');
+        const limit = document.getElementById('limit');
+        const limitRemaining = document.getElementById('limitRemaining');
+        const progressBar = document.getElementById('progressBar');
+        const progressLabel = document.getElementById('progressLabel');
+        const rateLimit = document.getElementById('rateLimit');
+        const freeTierStatus = document.getElementById('freeTierStatus');
+
+        // --- Event Listeners ---
+        fetchButton.addEventListener('click', handleFetch);
+        apiKeyInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleFetch();
+            }
+        });
+
+        /**
+         * Main function to handle fetching and displaying the API data.
+         */
+        async function handleFetch() {
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                showError("API Key cannot be empty.");
+                return;
+            }
+
+            // --- UI state for loading ---
+            setLoadingState(true);
+            hideError();
+            resultsContainer.classList.add('hidden');
+
+            try {
+                // The API endpoint
+                const apiUrl = 'https://openrouter.ai/api/v1/key';
+
+                // Fetch data from the API
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                    },
+                });
+
+                // Check if the response is ok (status in the range 200-299)
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    const detail = errorData?.error?.message || `HTTP error! Status: ${response.status}`;
+                    throw new Error(detail);
+                }
+
+                const result = await response.json();
+                
+                // --- Update the UI with the fetched data ---
+                updateUI(result.data);
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showError(`Failed to fetch data: ${error.message}`);
+            } finally {
+                // --- Reset UI loading state ---
+                setLoadingState(false);
+            }
+        }
+        
+        /**
+         * Updates the UI elements with data from the API.
+         * @param {object} data - The data object from the API response.
+         */
+        function updateUI(data) {
+            if (!data) {
+                showError("Received invalid data from the server.");
+                return;
+            }
+
+            // --- Populate text fields ---
+            keyLabel.textContent = data.label || 'No Label';
+            usage.textContent = `$${data.usage.toFixed(4)}`;
+            limit.textContent = `$${data.limit.toFixed(2)}`;
+            limitRemaining.textContent = `$${data.limit_remaining.toFixed(4)}`;
+            rateLimit.textContent = `${data.rate_limit.requests} / ${data.rate_limit.interval}`;
+            freeTierStatus.textContent = data.is_free_tier ? 'Active' : 'Inactive';
+
+            // --- Calculate and update progress bar ---
+            const usagePercentage = (data.usage / data.limit) * 100;
+            // Use setTimeout to allow the element to become visible before transitioning
+            setTimeout(() => {
+                 progressBar.style.width = `${Math.min(usagePercentage, 100)}%`;
+            }, 100);
+           
+            progressLabel.textContent = `${usagePercentage.toFixed(2)}% Used`;
+            
+            // --- Make the results visible ---
+            resultsContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Manages the loading state of the fetch button.
+         * @param {boolean} isLoading - Whether the app is in a loading state.
+         */
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                fetchButton.disabled = true;
+                buttonText.textContent = 'Fetching...';
+                spinner.classList.remove('hidden');
+            } else {
+                fetchButton.disabled = false;
+                buttonText.textContent = 'Fetch Stats';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Displays an error message in the UI.
+         * @param {string} message - The error message to display.
+         */
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the error message container.
+         */
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
+
