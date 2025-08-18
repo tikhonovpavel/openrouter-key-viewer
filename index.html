@@ -279,11 +279,11 @@
             progressLabel.textContent = `${usagePercentage.toFixed(2)}% Used`;
 
             // --- Populate text fields (Credits Data) ---
-            // Assuming 1 credit unit = $0.0001
-            totalCredits.textContent = `$${(creditsData.total_credits / 10000).toFixed(4)}`;
-            creditsUsage.textContent = `$${(creditsData.total_usage / 10000).toFixed(4)}`;
+            // 1 credit = $1
+            totalCredits.textContent = `$${(creditsData.total_credits).toFixed(2)}`;
+            creditsUsage.textContent = `$${(creditsData.total_usage).toFixed(4)}`;
             const remainingCreditsValue = creditsData.total_credits - creditsData.total_usage;
-            creditsRemaining.textContent = `$${(remainingCreditsValue / 10000).toFixed(4)}`;
+            creditsRemaining.textContent = `$${(remainingCreditsValue).toFixed(4)}`;
 
             // --- Calculate and update progress bar (Credits Data) ---
             const creditsUsagePercentage = creditsData.total_credits > 0 ? (creditsData.total_usage / creditsData.total_credits) * 100 : 0;
