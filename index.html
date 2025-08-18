@@ -94,6 +94,32 @@
                     </div>
                 </div>
 
+                <!-- Credits Card -->
+                <div class="card mb-6">
+                    <h2 class="text-lg font-semibold text-gray-300 mb-4">Credits</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div>
+                            <p class="text-sm text-gray-400">Total Credits</p>
+                            <p id="totalCredits" class="text-3xl font-bold text-green-400">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Usage</p>
+                            <p id="creditsUsage" class="text-3xl font-bold text-red-400">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Remaining</p>
+                            <p id="creditsRemaining" class="text-3xl font-bold text-blue-400">-</p>
+                        </div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="mt-6">
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div id="creditsProgressBar" class="bg-gradient-to-r from-green-500 to-teal-400 h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
+                        </div>
+                        <p id="creditsProgressLabel" class="text-right text-sm mt-2 text-gray-400">0% Used</p>
+                    </div>
+                </div>
+
                 <!-- Other Info Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="card">
@@ -151,6 +177,13 @@
         const rateLimit = document.getElementById('rateLimit');
         const freeTierStatus = document.getElementById('freeTierStatus');
 
+        // --- Credits Display Elements ---
+        const totalCredits = document.getElementById('totalCredits');
+        const creditsUsage = document.getElementById('creditsUsage');
+        const creditsRemaining = document.getElementById('creditsRemaining');
+        const creditsProgressBar = document.getElementById('creditsProgressBar');
+        const creditsProgressLabel = document.getElementById('creditsProgressLabel');
+
         // --- Event Listeners ---
         fetchButton.addEventListener('click', handleFetch);
         apiKeyInput.addEventListener('keypress', (event) => {
@@ -176,32 +209,43 @@
             resultsContainer.classList.add('hidden');
 
             try {
-                // The API endpoint
-                const apiUrl = 'https://openrouter.ai/api/v1/key';
+                // The API endpoints
+                const keyApiUrl = 'https://openrouter.ai/api/v1/key';
+                const creditsApiUrl = 'https://openrouter.ai/api/v1/credits';
 
-                // Fetch data from the API
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                    },
-                });
+                const headers = {
+                    'Authorization': `Bearer ${apiKey}`,
+                };
 
-                // Check if the response is ok (status in the range 200-299)
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
-                    const detail = errorData?.error?.message || `HTTP error! Status: ${response.status}`;
-                    throw new Error(detail);
+                // Fetch data from both APIs concurrently
+                const [keyResponse, creditsResponse] = await Promise.all([
+                    fetch(keyApiUrl, { method: 'GET', headers }),
+                    fetch(creditsApiUrl, { method: 'GET', headers })
+                ]);
+
+                // Check if the key response is ok
+                if (!keyResponse.ok) {
+                    const errorData = await keyResponse.json().catch(() => null);
+                    const detail = errorData?.error?.message || `HTTP error! Status: ${keyResponse.status}`;
+                    throw new Error(`Failed to fetch key details: ${detail}`);
                 }
 
-                const result = await response.json();
+                // Check if the credits response is ok
+                if (!creditsResponse.ok) {
+                    const errorData = await creditsResponse.json().catch(() => null);
+                    const detail = errorData?.error?.message || `HTTP error! Status: ${creditsResponse.status}`;
+                    throw new Error(`Failed to fetch credit details: ${detail}`);
+                }
+
+                const keyResult = await keyResponse.json();
+                const creditsResult = await creditsResponse.json();
                 
                 // --- Update the UI with the fetched data ---
-                updateUI(result.data);
+                updateUI(keyResult.data, creditsResult.data);
                 
             } catch (error) {
                 console.error('Fetch error:', error);
-                showError(`Failed to fetch data: ${error.message}`);
+                showError(`${error.message}`);
             } finally {
                 // --- Reset UI loading state ---
                 setLoadingState(false);
@@ -210,30 +254,43 @@
         
         /**
          * Updates the UI elements with data from the API.
-         * @param {object} data - The data object from the API response.
+         * @param {object} keyData - The data object from the /key API response.
+         * @param {object} creditsData - The data object from the /credits API response.
          */
-        function updateUI(data) {
-            if (!data) {
+        function updateUI(keyData, creditsData) {
+            if (!keyData || !creditsData) {
                 showError("Received invalid data from the server.");
                 return;
             }
 
-            // --- Populate text fields ---
-            keyLabel.textContent = data.label || 'No Label';
-            usage.textContent = `$${data.usage.toFixed(4)}`;
-            limit.textContent = `$${data.limit.toFixed(2)}`;
-            limitRemaining.textContent = `$${data.limit_remaining.toFixed(4)}`;
-            rateLimit.textContent = `${data.rate_limit.requests} / ${data.rate_limit.interval}`;
-            freeTierStatus.textContent = data.is_free_tier ? 'Active' : 'Inactive';
+            // --- Populate text fields (Key Data) ---
+            keyLabel.textContent = keyData.label || 'No Label';
+            usage.textContent = `$${keyData.usage.toFixed(4)}`;
+            limit.textContent = `$${keyData.limit.toFixed(2)}`;
+            limitRemaining.textContent = `$${keyData.limit_remaining.toFixed(4)}`;
+            rateLimit.textContent = `${keyData.rate_limit.requests} / ${keyData.rate_limit.interval}`;
+            freeTierStatus.textContent = keyData.is_free_tier ? 'Active' : 'Inactive';
 
-            // --- Calculate and update progress bar ---
-            const usagePercentage = (data.usage / data.limit) * 100;
-            // Use setTimeout to allow the element to become visible before transitioning
+            // --- Calculate and update progress bar (Key Data) ---
+            const usagePercentage = (keyData.usage / keyData.limit) * 100;
             setTimeout(() => {
                  progressBar.style.width = `${Math.min(usagePercentage, 100)}%`;
             }, 100);
-           
             progressLabel.textContent = `${usagePercentage.toFixed(2)}% Used`;
+
+            // --- Populate text fields (Credits Data) ---
+            // Assuming 1 credit unit = $0.0001
+            totalCredits.textContent = `$${(creditsData.total_credits / 10000).toFixed(4)}`;
+            creditsUsage.textContent = `$${(creditsData.total_usage / 10000).toFixed(4)}`;
+            const remainingCreditsValue = creditsData.total_credits - creditsData.total_usage;
+            creditsRemaining.textContent = `$${(remainingCreditsValue / 10000).toFixed(4)}`;
+
+            // --- Calculate and update progress bar (Credits Data) ---
+            const creditsUsagePercentage = creditsData.total_credits > 0 ? (creditsData.total_usage / creditsData.total_credits) * 100 : 0;
+            setTimeout(() => {
+                 creditsProgressBar.style.width = `${Math.min(creditsUsagePercentage, 100)}%`;
+            }, 100);
+            creditsProgressLabel.textContent = `${creditsUsagePercentage.toFixed(2)}% Used`;
             
             // --- Make the results visible ---
             resultsContainer.classList.remove('hidden');
