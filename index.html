@@ -41,30 +41,33 @@
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-2xl mx-auto">
+    <div id="pageContainer" class="w-full max-w-2xl mx-auto transition-all duration-700 ease-in-out">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-white">OpenRouter Key Stats</h1>
             <p class="text-gray-400 mt-2">Enter your OpenRouter API key to see your usage details.</p>
         </header>
 
         <main>
-            <!-- Saved Keys Section -->
-            <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-4">
-                <label for="savedKeys" class="block text-sm font-medium text-gray-300 mb-2">Saved Keys</label>
-                <div class="flex items-center gap-4">
-                    <select id="savedKeys" class="flex-grow w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
-                        <option value="">Select a saved key</option>
-                    </select>
-                    <button id="deleteKeyButton" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center" title="Delete Selected Key">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+             <div id="mainContentContainer">
+                <!-- Left Column -->
+                <div id="leftColumn" class="flex flex-col gap-6">
+                    <!-- Saved Keys Section -->
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <label for="savedKeys" class="block text-sm font-medium text-gray-300 mb-2">Saved Keys</label>
+                        <div class="flex items-center gap-4">
+                            <select id="savedKeys" class="flex-grow w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                                <option value="">Select a saved key</option>
+                            </select>
+                            <button id="deleteKeyButton" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center" title="Delete Selected Key">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
             <!-- Input section -->
-            <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
                 <div class="flex flex-col sm:flex-row items-center gap-4">
                     <input type="password" id="apiKeyInput" placeholder="Enter your OpenRouter API key (or_...)" class="flex-grow w-full bg-gray-700 text-white placeholder-gray-400 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
                     <button id="fetchButton" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
@@ -78,18 +81,23 @@
                 </p>
             </div>
 
-            <!-- Results container -->
-            <div id="resultsContainer" class="hidden">
+                    <!-- Error message container -->
+                    <div id="errorContainer" class="hidden card bg-red-900 border-red-700 text-red-200">
+                        <p id="errorMessage"></p>
+                    </div>
+
+                    <!-- Info Cards Container -->
+                    <div id="infoCardsContainer" class="hidden flex-col gap-6">
                 <!-- Key Label Card -->
-                <div class="card mb-6">
+                        <div class="card">
                      <h2 class="text-lg font-semibold text-gray-300 mb-2">Key Label</h2>
                      <p id="keyLabel" class="text-2xl font-bold text-white">-</p>
                 </div>
 
                 <!-- Usage and Limit Card -->
-                <div class="card mb-6">
+                        <div class="card">
                     <h2 class="text-lg font-semibold text-gray-300 mb-4">Usage & Limit</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
                         <div>
                             <p class="text-sm text-gray-400">Usage</p>
                             <p id="usage" class="text-3xl font-bold text-red-400">-</p>
@@ -113,9 +121,9 @@
                 </div>
 
                 <!-- Credits Card -->
-                <div class="card mb-6">
+                        <div class="card">
                     <h2 class="text-lg font-semibold text-gray-300 mb-4">Credits</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
                         <div>
                             <p class="text-sm text-gray-400">Total Credits</p>
                             <p id="totalCredits" class="text-3xl font-bold text-green-400">-</p>
@@ -138,16 +146,8 @@
                     </div>
                 </div>
 
-                <!-- History Chart Card -->
-                <div class="card">
-                    <h2 class="text-lg font-semibold text-gray-300 mb-4">Usage History (Remaining Credits)</h2>
-                    <div class="relative h-64 md:h-80">
-                        <canvas id="usageHistoryChart"></canvas>
-                    </div>
-                </div>
-
                 <!-- Other Info Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="card">
                          <h3 class="text-lg font-semibold text-gray-300 mb-3">Rate Limit</h3>
                          <div class="flex items-center space-x-4">
@@ -174,12 +174,28 @@
                     </div>
                 </div>
             </div>
+                </div>
 
-            <!-- Error message container -->
-            <div id="errorContainer" class="hidden card bg-red-900 border-red-700 text-red-200 mt-6">
-                <p id="errorMessage"></p>
+                <!-- Right Column: Charts -->
+                <div id="chartCardsContainer" class="hidden opacity-0 lg:col-span-2 flex-col gap-6 transition-opacity duration-500 ease-in-out">
+                    <!-- History Chart Card (Limit) -->
+                    <div class="card">
+                        <h2 class="text-lg font-semibold text-gray-300 mb-4">History (Remaining Usage Limit)</h2>
+                        <div class="relative h-80">
+                            <canvas id="limitHistoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- History Chart Card (Credits) -->
+                    <div class="card">
+                        <h2 class="text-lg font-semibold text-gray-300 mb-4">History (Remaining Credits)</h2>
+                        <div class="relative h-80">
+                            <canvas id="creditsHistoryChart"></canvas>
+                    </div>
+                </div>
             </div>
 
+            </div>
         </main>
     </div>
 
@@ -190,6 +206,8 @@
         const buttonText = document.getElementById('buttonText');
         const spinner = document.getElementById('spinner');
         const resultsContainer = document.getElementById('resultsContainer');
+        const infoCardsContainer = document.getElementById('infoCardsContainer');
+        const chartCardsContainer = document.getElementById('chartCardsContainer');
         const errorContainer = document.getElementById('errorContainer');
         const errorMessage = document.getElementById('errorMessage');
         const savedKeysSelect = document.getElementById('savedKeys');
@@ -198,7 +216,7 @@
         // --- LocalStorage Keys ---
         const STORAGE_KEYS = 'openRouterKeys';
         const STORAGE_HISTORY = 'openRouterKeyHistory';
-
+        
         // --- Result Display Elements ---
         const keyLabel = document.getElementById('keyLabel');
         const usage = document.getElementById('usage');
@@ -245,7 +263,7 @@
             // --- UI state for loading ---
             setLoadingState(true);
             hideError();
-            resultsContainer.classList.add('hidden');
+            setResultsVisible(false);
 
             try {
                 // The API endpoints
@@ -284,14 +302,14 @@
 
                 // --- Save usage history ---
                 const remainingCredits = creditsResult.data.total_credits - creditsResult.data.total_usage;
-                saveHistory(apiKey, remainingCredits);
-
+                saveHistory(apiKey, remainingCredits, keyResult.data.limit_remaining);
+                
                 // --- Update the UI with the fetched data ---
                 updateUI(keyResult.data, creditsResult.data);
                 
                 // --- Render history chart ---
-                renderHistoryChart(apiKey);
-
+                renderCharts(apiKey);
+                
             } catch (error) {
                 console.error('Fetch error:', error);
                 showError(`${error.message}`);
@@ -342,23 +360,120 @@
             creditsProgressLabel.textContent = `${creditsUsagePercentage.toFixed(2)}% Used`;
             
             // --- Make the results visible ---
-            resultsContainer.classList.remove('hidden');
+            setResultsVisible(true);
         }
 
-        let usageChart = null; // Variable to hold the chart instance
+        let creditsUsageChart = null; // Variable to hold the credits chart instance
+        let limitUsageChart = null; // Variable to hold the limit chart instance
+
+        /**
+         * Renders both history charts.
+         * @param {string} apiKey - The API key to render charts for.
+         */
+        function renderCharts(apiKey) {
+            const history = (JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {})[apiKey] || [];
+            renderCreditsHistoryChart(history);
+            renderLimitHistoryChart(history);
+        }
 
         /**
          * Renders the usage history chart for a given API key.
-         * @param {string} apiKey - The API key to render the chart for.
+         * @param {Array} history - The history data for the key.
          */
-        function renderHistoryChart(apiKey) {
-            const history = (JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {})[apiKey] || [];
-
+        function renderCreditsHistoryChart(history) {
             const chartData = {
                 labels: history.map(h => new Date(h.timestamp)),
                 datasets: [{
                     label: 'Remaining Credits ($)',
-                    data: history.map(h => h.remaining),
+                    data: history.map(h => h.remainingCredits),
+                    borderColor: '#22c55e', // green-500
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#16a34a', // green-600
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1,
+                    fill: true
+                }]
+            };
+
+            const config = {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                tooltipFormat: 'PPpp'
+                            },
+                            ticks: {
+                                color: '#9ca3af', /* gray-400 */
+                                callback: function(value) {
+                                    const date = new Date(value);
+                                    const options = {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false
+                                    };
+                                    return date.toLocaleString([], options); // Use user's locale
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                color: '#9ca3af', /* gray-400 */
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937', // gray-800
+                            titleColor: '#f3f4f6', // gray-100
+                            bodyColor: '#d1d5db', // gray-300
+                            borderColor: '#374151', // gray-700
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Remaining: $${Number(context.raw).toFixed(4)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            const ctx = document.getElementById('creditsHistoryChart').getContext('2d');
+            
+            if (creditsUsageChart) {
+                creditsUsageChart.destroy();
+            }
+            creditsUsageChart = new Chart(ctx, config);
+        }
+
+        /**
+         * Renders the limit history chart for a given API key.
+         * @param {Array} history - The history data for the key.
+         */
+        function renderLimitHistoryChart(history) {
+            const chartData = {
+                labels: history.map(h => new Date(h.timestamp)),
+                datasets: [{
+                    label: 'Remaining Limit ($)',
+                    data: history.map(h => h.remainingLimit),
                     borderColor: '#38bdf8', // cyan-400
                     backgroundColor: 'rgba(56, 189, 248, 0.1)',
                     borderWidth: 2,
@@ -428,13 +543,12 @@
                     }
                 }
             };
-
-            const ctx = document.getElementById('usageHistoryChart').getContext('2d');
             
-            if (usageChart) {
-                usageChart.destroy(); // Destroy the old chart instance before creating a new one
+            const ctx = document.getElementById('limitHistoryChart').getContext('2d');
+            if (limitUsageChart) {
+                limitUsageChart.destroy();
             }
-            usageChart = new Chart(ctx, config);
+            limitUsageChart = new Chart(ctx, config);
         }
 
         /**
@@ -447,11 +561,7 @@
                 handleFetch(); // Automatically fetch data for the selected key
             } else {
                 // Clear results if "Select a saved key" is chosen
-                resultsContainer.classList.add('hidden');
-                if (usageChart) {
-                    usageChart.destroy();
-                    usageChart = null;
-                }
+                setResultsVisible(false);
             }
         }
 
@@ -464,12 +574,8 @@
                 if (confirm(`Are you sure you want to delete the key "${savedKeysSelect.options[savedKeysSelect.selectedIndex].text}"?`)) {
                     deleteKey(selectedKey);
                     apiKeyInput.value = '';
-                    resultsContainer.classList.add('hidden');
                     hideError();
-                    if (usageChart) {
-                        usageChart.destroy();
-                        usageChart = null;
-                    }
+                    setResultsVisible(false);
                 }
             } else {
                 alert("Please select a key to delete.");
@@ -537,16 +643,18 @@
         /**
          * Saves a history entry for a given API key.
          * @param {string} apiKey - The API key.
-         * @param {number} remainingBalance - The remaining credits.
+         * @param {number} remainingCredits - The remaining credits.
+         * @param {number} remainingLimit - The remaining limit.
          */
-        function saveHistory(apiKey, remainingBalance) {
+        function saveHistory(apiKey, remainingCredits, remainingLimit) {
             let history = JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {};
             if (!history[apiKey]) {
                 history[apiKey] = [];
             }
             history[apiKey].push({
                 timestamp: new Date().toISOString(),
-                remaining: remainingBalance
+                remainingCredits: remainingCredits,
+                remainingLimit: remainingLimit
             });
             // Optional: Limit history size to e.g. last 100 entries per key
             if (history[apiKey].length > 100) {
@@ -585,6 +693,55 @@
          */
         function hideError() {
             errorContainer.classList.add('hidden');
+        }
+
+        /**
+         * Controls the visibility and layout animation of the results.
+         * @param {boolean} visible - Whether the results should be visible.
+         */
+        function setResultsVisible(visible) {
+            const pageContainer = document.getElementById('pageContainer');
+            const mainContentContainer = document.getElementById('mainContentContainer');
+            const leftColumn = document.getElementById('leftColumn');
+
+            if (visible) {
+                pageContainer.classList.remove('max-w-2xl');
+                pageContainer.classList.add('max-w-6xl');
+                
+                mainContentContainer.classList.add('grid', 'grid-cols-1', 'lg:grid-cols-5', 'gap-8');
+                leftColumn.classList.add('lg:col-span-3');
+
+                infoCardsContainer.classList.remove('hidden');
+                infoCardsContainer.classList.add('flex');
+                
+                chartCardsContainer.classList.remove('hidden');
+                chartCardsContainer.classList.add('flex');
+                setTimeout(() => {
+                    chartCardsContainer.classList.remove('opacity-0');
+                }, 50); // Timeout for CSS transition
+
+            } else {
+                pageContainer.classList.add('max-w-2xl');
+                pageContainer.classList.remove('max-w-6xl');
+
+                mainContentContainer.classList.remove('grid', 'grid-cols-1', 'lg:grid-cols-5', 'gap-8');
+                leftColumn.classList.remove('lg:col-span-3');
+
+                infoCardsContainer.classList.add('hidden');
+                infoCardsContainer.classList.remove('flex');
+
+                chartCardsContainer.classList.add('hidden', 'opacity-0');
+                chartCardsContainer.classList.remove('flex');
+
+                if (creditsUsageChart) {
+                    creditsUsageChart.destroy();
+                    creditsUsageChart = null;
+                }
+                if (limitUsageChart) {
+                    limitUsageChart.destroy();
+                    limitUsageChart = null;
+                }
+            }
         }
 
     </script>
