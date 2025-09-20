@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         /* Custom styles */
         body {
@@ -45,6 +48,21 @@
         </header>
 
         <main>
+            <!-- Saved Keys Section -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-4">
+                <label for="savedKeys" class="block text-sm font-medium text-gray-300 mb-2">Saved Keys</label>
+                <div class="flex items-center gap-4">
+                    <select id="savedKeys" class="flex-grow w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                        <option value="">Select a saved key</option>
+                    </select>
+                    <button id="deleteKeyButton" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center" title="Delete Selected Key">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <!-- Input section -->
             <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
                 <div class="flex flex-col sm:flex-row items-center gap-4">
@@ -120,8 +138,16 @@
                     </div>
                 </div>
 
+                <!-- History Chart Card -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-gray-300 mb-4">Usage History (Remaining Credits)</h2>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="usageHistoryChart"></canvas>
+                    </div>
+                </div>
+
                 <!-- Other Info Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div class="card">
                          <h3 class="text-lg font-semibold text-gray-300 mb-3">Rate Limit</h3>
                          <div class="flex items-center space-x-4">
@@ -166,7 +192,13 @@
         const resultsContainer = document.getElementById('resultsContainer');
         const errorContainer = document.getElementById('errorContainer');
         const errorMessage = document.getElementById('errorMessage');
+        const savedKeysSelect = document.getElementById('savedKeys');
+        const deleteKeyButton = document.getElementById('deleteKeyButton');
         
+        // --- LocalStorage Keys ---
+        const STORAGE_KEYS = 'openRouterKeys';
+        const STORAGE_HISTORY = 'openRouterKeyHistory';
+
         // --- Result Display Elements ---
         const keyLabel = document.getElementById('keyLabel');
         const usage = document.getElementById('usage');
@@ -184,6 +216,11 @@
         const creditsProgressBar = document.getElementById('creditsProgressBar');
         const creditsProgressLabel = document.getElementById('creditsProgressLabel');
 
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateSavedKeysDropdown();
+        });
+
         // --- Event Listeners ---
         fetchButton.addEventListener('click', handleFetch);
         apiKeyInput.addEventListener('keypress', (event) => {
@@ -191,6 +228,8 @@
                 handleFetch();
             }
         });
+        savedKeysSelect.addEventListener('change', handleKeySelection);
+        deleteKeyButton.addEventListener('click', handleDeleteKey);
 
         /**
          * Main function to handle fetching and displaying the API data.
@@ -240,9 +279,19 @@
                 const keyResult = await keyResponse.json();
                 const creditsResult = await creditsResponse.json();
                 
+                // --- Save key on successful fetch ---
+                saveKey(apiKey, keyResult.data.label || `Key_${apiKey.slice(0, 6)}`);
+
+                // --- Save usage history ---
+                const remainingCredits = creditsResult.data.total_credits - creditsResult.data.total_usage;
+                saveHistory(apiKey, remainingCredits);
+
                 // --- Update the UI with the fetched data ---
                 updateUI(keyResult.data, creditsResult.data);
                 
+                // --- Render history chart ---
+                renderHistoryChart(apiKey);
+
             } catch (error) {
                 console.error('Fetch error:', error);
                 showError(`${error.message}`);
@@ -294,6 +343,216 @@
             
             // --- Make the results visible ---
             resultsContainer.classList.remove('hidden');
+        }
+
+        let usageChart = null; // Variable to hold the chart instance
+
+        /**
+         * Renders the usage history chart for a given API key.
+         * @param {string} apiKey - The API key to render the chart for.
+         */
+        function renderHistoryChart(apiKey) {
+            const history = (JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {})[apiKey] || [];
+
+            const chartData = {
+                labels: history.map(h => new Date(h.timestamp)),
+                datasets: [{
+                    label: 'Remaining Credits ($)',
+                    data: history.map(h => h.remaining),
+                    borderColor: '#38bdf8', // cyan-400
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0ea5e9', // cyan-500
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1,
+                    fill: true
+                }]
+            };
+
+            const config = {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                tooltipFormat: 'PPpp'
+                            },
+                            ticks: {
+                                color: '#9ca3af', /* gray-400 */
+                                callback: function(value) {
+                                    const date = new Date(value);
+                                    const options = {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false
+                                    };
+                                    return date.toLocaleString([], options); // Use user's locale
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                color: '#9ca3af', /* gray-400 */
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937', // gray-800
+                            titleColor: '#f3f4f6', // gray-100
+                            bodyColor: '#d1d5db', // gray-300
+                            borderColor: '#374151', // gray-700
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Remaining: $${Number(context.raw).toFixed(4)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            const ctx = document.getElementById('usageHistoryChart').getContext('2d');
+            
+            if (usageChart) {
+                usageChart.destroy(); // Destroy the old chart instance before creating a new one
+            }
+            usageChart = new Chart(ctx, config);
+        }
+
+        /**
+         * Handles selection of a key from the dropdown.
+         */
+        function handleKeySelection() {
+            const selectedKey = savedKeysSelect.value;
+            if (selectedKey) {
+                apiKeyInput.value = selectedKey;
+                handleFetch(); // Automatically fetch data for the selected key
+            } else {
+                // Clear results if "Select a saved key" is chosen
+                resultsContainer.classList.add('hidden');
+                if (usageChart) {
+                    usageChart.destroy();
+                    usageChart = null;
+                }
+            }
+        }
+
+        /**
+         * Handles deleting the currently selected key.
+         */
+        function handleDeleteKey() {
+            const selectedKey = savedKeysSelect.value;
+            if (selectedKey) {
+                if (confirm(`Are you sure you want to delete the key "${savedKeysSelect.options[savedKeysSelect.selectedIndex].text}"?`)) {
+                    deleteKey(selectedKey);
+                    apiKeyInput.value = '';
+                    resultsContainer.classList.add('hidden');
+                    hideError();
+                    if (usageChart) {
+                        usageChart.destroy();
+                        usageChart = null;
+                    }
+                }
+            } else {
+                alert("Please select a key to delete.");
+            }
+        }
+
+        /**
+         * Populates the saved keys dropdown from localStorage.
+         */
+        function populateSavedKeysDropdown() {
+            const keys = getSavedKeys();
+            savedKeysSelect.innerHTML = '<option value="">Select a saved key</option>'; // Reset
+            keys.forEach(keyObj => {
+                const option = document.createElement('option');
+                option.value = keyObj.key;
+                option.textContent = keyObj.label;
+                savedKeysSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Retrieves saved keys from localStorage.
+         * @returns {Array<object>} An array of key objects.
+         */
+        function getSavedKeys() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS)) || [];
+        }
+
+        /**
+         * Saves a key to localStorage if it doesn't already exist.
+         * @param {string} apiKey - The API key.
+         * @param {string} label - The label for the key.
+         */
+        function saveKey(apiKey, label) {
+            const keys = getSavedKeys();
+            const existingKey = keys.find(k => k.key === apiKey);
+            if (!existingKey) {
+                keys.push({ key: apiKey, label: label });
+                localStorage.setItem(STORAGE_KEYS, JSON.stringify(keys));
+                populateSavedKeysDropdown();
+            } else if (existingKey.label !== label) {
+                // Update label if it has changed
+                existingKey.label = label;
+                localStorage.setItem(STORAGE_KEYS, JSON.stringify(keys));
+                populateSavedKeysDropdown();
+            }
+        }
+
+        /**
+         * Deletes a key and its history from localStorage.
+         * @param {string} apiKey - The API key to delete.
+         */
+        function deleteKey(apiKey) {
+            let keys = getSavedKeys();
+            keys = keys.filter(k => k.key !== apiKey);
+            localStorage.setItem(STORAGE_KEYS, JSON.stringify(keys));
+            
+            let history = JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {};
+            delete history[apiKey];
+            localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
+
+            populateSavedKeysDropdown();
+        }
+
+        /**
+         * Saves a history entry for a given API key.
+         * @param {string} apiKey - The API key.
+         * @param {number} remainingBalance - The remaining credits.
+         */
+        function saveHistory(apiKey, remainingBalance) {
+            let history = JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || {};
+            if (!history[apiKey]) {
+                history[apiKey] = [];
+            }
+            history[apiKey].push({
+                timestamp: new Date().toISOString(),
+                remaining: remainingBalance
+            });
+            // Optional: Limit history size to e.g. last 100 entries per key
+            if (history[apiKey].length > 100) {
+                history[apiKey].shift();
+            }
+            localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
         }
 
         /**
